@@ -290,6 +290,7 @@ errcontext_msg(const char *fmt,...)
 __attribute__((format(PG_PRINTF_ATTRIBUTE, 1, 2)));
 
 extern int	errhidestmt(bool hide_stmt);
+extern int	errhidecontext(bool hide_ctx);
 
 extern int	errfunction(const char *funcname);
 extern int	errposition(int cursorpos);
@@ -470,6 +471,7 @@ typedef struct ErrorData
     bool        omit_location;  /* GPDB: don't add filename:line# and stack trace */
     bool        fatal_return;   /* GPDB: true => return instead of proc_exit() */
 	bool		hide_stmt;		/* true to prevent STATEMENT: inclusion */
+	bool		hide_ctx;		/* true to prevent CONTEXT: inclusion */
 	const char *filename;		/* __FILE__ of ereport() call */
 	int			lineno;			/* __LINE__ of ereport() call */
 	const char *funcname;		/* __func__ of ereport() call */
