@@ -243,11 +243,23 @@ class SQLIsolationExecutor(object):
             # recv() on the pipe will fail.
             child_conn.close()
 
+            r = self.pipe.recv()
+            if r is None:
+                raise SessionError(nam e, mode, "Failed to create SQL connection.")
+            if  r != "T":
+                raise SessionError(nam e, mode, r)
+
             self.out_file = out_file
 
         def session_process(self, pipe):
-            sp = SQLIsolationExecutor.SQLSessionProcess(self.name, 
-                self.mode, pipe, self.dbname, passwd=self.passwd)
+            try:
+                sp = SQLIsolationExecutor.SQLSessionProcess(self.name, 
+                    self.mode, pipe, self.dbname, passwd=self.passwd)
+            except Exception as e:
+                self.pipe.send(str(e))
+                return
+
+            self.pipe.send("T")
             sp.do()
 
         def query(self, command, out_sh_cmd, global_sh_executor):
@@ -372,9 +384,6 @@ class SQLIsolationExecutor(object):
                         retry > 1):
                         retry -= 1
                         time.sleep(0.1)
-                    if self.mode == "retrieve" and "auth token is invalid" in str(e):
-                        self.create_exception = e
-                        break
                     else:
                         raise
             return con
