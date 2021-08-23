@@ -116,7 +116,7 @@ static const char *logFatal = "FATAL";
  */
 
 PGconn	   *g_conn;				/* the database connection */
-const char *progname;			/* the program name */
+//const char *progname;			/* the program name */
 bool		g_verbose;			/* User wants verbose narration of our
 								 * activities. */
 
