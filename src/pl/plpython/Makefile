@@ -94,30 +94,30 @@ else
 REGRESS_OPTS += --load-extension=plpython3u
 endif
 
-REGRESS = plpython_record plpython_returns
-# REGRESS = \
-# 	plpython_schema \
-# 	plpython_populate \
-# 	plpython_test \
-# 	plpython_do \
-# 	plpython_global \
-# 	plpython_import \
-# 	plpython_spi \
-# 	plpython_newline \
-# 	plpython_void \
-# 	plpython_params \
-# 	plpython_setof \
-# 	plpython_record \
-# 	plpython_trigger \
-# 	plpython_types \
-# 	plpython_error \
-# 	plpython_unicode \
-# 	plpython_quote \
-# 	plpython_composite \
-# 	plpython_subtransaction \
-# 	plpython_returns \
-# 	plpython_gpdb \
-# 	plpython_drop
+# REGRESS = plpython_record plpython_returns plpython_schema 
+REGRESS = \
+	plpython_schema \
+	plpython_populate \
+	plpython_test \
+	plpython_do \
+	plpython_global \
+	plpython_import \
+	plpython_spi \
+	plpython_newline \
+	plpython_void \
+	plpython_params \
+	plpython_setof \
+	plpython_record \
+	plpython_trigger \
+	plpython_types \
+	plpython_error \
+	plpython_unicode \
+	plpython_quote \
+	plpython_composite \
+	plpython_subtransaction \
+	plpython_returns \
+	plpython_gpdb \
+	plpython_drop
 
 REGRESS_PLPYTHON3_MANGLE := $(REGRESS)
 
