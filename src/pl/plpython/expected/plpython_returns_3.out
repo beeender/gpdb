@@ -2208,7 +2208,7 @@ ERROR:  SyntaxError: invalid syntax (<string>, line 1) (plpy_elog.c:106)
 --
 -- From Python None
 SELECT test_return_out_text('None');
- test_return_out_text
+ test_return_out_text 
 ----------------------
  
 (1 row)
