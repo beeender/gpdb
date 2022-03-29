@@ -94,7 +94,6 @@ else
 REGRESS_OPTS += --load-extension=plpython3u
 endif
 
-# REGRESS = plpython_record plpython_returns plpython_schema 
 REGRESS = \
 	plpython_schema \
 	plpython_populate \
@@ -191,7 +190,6 @@ check: all submake
 	$(pg_regress_check) $(REGRESS_OPTS) $(REGRESS)
 
 installcheck: submake
-	cp expected/plpython_returns_2.out expected/plpython_returns.out
 	$(pg_regress_installcheck) $(REGRESS_OPTS) $(REGRESS)
 
 

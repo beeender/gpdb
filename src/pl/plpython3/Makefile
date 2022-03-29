@@ -154,7 +154,7 @@ REGRESS := $(foreach test,$(REGRESS),$(if $(filter $(test),$(REGRESS_PLPYTHON3_M
 pgregress-python3-mangle:
 	$(MKDIR_P) sql/python3 expected/python3 results/python3
 	# for python and python3 types and returns test are not the same.
-	cp -f ../plpython/expected/plpython_returns_3.out ../plpython/expected/plpython_returns.out
+	cp -f ../plpython/expected/plpython_returns_3.out ../plpython/expected/python3/plpython_returns.out
 	for file in $(patsubst %,$(srcdir)/sql/%.sql,$(REGRESS_PLPYTHON3_MANGLE)) $(patsubst %,$(srcdir)/expected/%*.out,$(REGRESS_PLPYTHON3_MANGLE)); do \
 	  sed -e 's/except \([[:alpha:]][[:alpha:].]*\), *\([[:alpha:]][[:alpha:]]*\):/except \1 as \2:/g' \
 	      -e "s/<type 'exceptions\.\([[:alpha:]]*\)'>/<class '\1'>/g" \
@@ -171,7 +171,6 @@ pgregress-python3-mangle:
 	      -e "s/EXTENSION plpython2u/EXTENSION plpython3u/Ig" \
 	    $$file >`echo $$file | sed 's,^.*/\([^/][^/]*/\)\([^/][^/]*\)$$,\1python3/\2,'` || exit; \
 	done
-	cp expected/plpython_types_3.out expected/python3/plpython_types.out
 
 check installcheck: pgregress-python3-mangle
 
