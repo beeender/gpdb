@@ -1,4 +1,4 @@
-/*
+	/*
  * PL/Python main entry points
  *
  * src/pl/plpython/plpy_main.c
@@ -16,6 +16,8 @@
 #include "utils/memutils.h"
 #include "utils/rel.h"
 #include "utils/syscache.h"
+
+#include "cdb/cdbvars.h"
 
 #include "plpython.h"
 
@@ -86,6 +88,12 @@ bool PLy_add_path = false;
 // need to add ifdef
 #if PY_MAJOR_VERSION >= 3
 char *plpython3_path = NULL;
+void
+assign_plpython3_python_path(const char *newval, void *extra) 
+{
+	if (Gp_role != GP_ROLE_EXECUTE)
+		ereport(WARNING, (errmsg("PYTHONPATH for plpython3 can only set once in one session")));
+}
 #endif
 
 void
@@ -151,7 +159,9 @@ _PG_init(void)
 							&plpython3_path,
 							NULL,
 							PGC_USERSET, 0,
-							NULL, NULL, NULL);
+							NULL, 
+							assign_plpython3_python_path, 
+							NULL);
 #endif
 	pg_bindtextdomain(TEXTDOMAIN);
 }
