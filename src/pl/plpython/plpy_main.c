@@ -80,6 +80,13 @@ cancel_pending_hook_type prev_cancel_pending_hook;
 void PLy_handle_cancel_interrupt(void);
 
 bool PLy_enter_python_intepreter = false;
+bool PLy_add_path = false;
+
+/* GUC variables */
+// need to add ifdef
+#if PY_MAJOR_VERSION >= 3
+char *plpython3_path = NULL;
+#endif
 
 void
 _PG_init(void)
@@ -137,6 +144,15 @@ _PG_init(void)
 	prev_cancel_pending_hook = cancel_pending_hook;
 	cancel_pending_hook = PLy_handle_cancel_interrupt;
 
+#if PY_MAJOR_VERSION >= 3
+	DefineCustomStringVariable("plpython3.python_path",
+							gettext_noop("Python path for plpython3."),
+							NULL,
+							&plpython3_path,
+							NULL,
+							PGC_USERSET, 0,
+							NULL, NULL, NULL);
+#endif
 	pg_bindtextdomain(TEXTDOMAIN);
 }
 
@@ -162,18 +178,23 @@ PLy_initialize(void)
 		ereport(FATAL,
 				(errmsg("multiple Python libraries are present in session"),
 				 errdetail("Only one Python major version can be used in one session.")));
-
+#if PY_MAJOR_VERSION >= 3
+	/* PYTHONPATH and PYTHONHOME has been set to GPDB's python2.7 in Postmaster when
+	 * gpstart. So for plpython3u, we need to unset PYTHONPATH and PYTHONHOME.
+	 * if user set PYTHONPATH then we set it in the env
+	 */
+	if (plpython3_path && *plpython3_path) 
+		setenv("PYTHONPATH", plpython3_path, 1);
+	else 
+		unsetenv("PYTHONPATH");
+#endif
+	unsetenv("PYTHONHOME");
 	/* The rest should only be done once per session */
 	if (inited)
 		return;
 
 #if PY_MAJOR_VERSION >= 3
 	PyImport_AppendInittab("plpy", PyInit_plpy);
-	/* PYTHONPATH and PYTHONHOME has been set to GPDB's python2.7 in Postmaster when
-	 * gpstart. So for plpython3u, we need to unset PYTHONPATH and PYTHONHOME.
-	 */
-	unsetenv("PYTHONPATH");
-	unsetenv("PYTHONHOME");
 #endif
 	Py_Initialize();
 #if PY_MAJOR_VERSION >= 3
