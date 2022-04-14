@@ -83,7 +83,7 @@ cancel_pending_hook_type prev_cancel_pending_hook;
 void PLy_handle_cancel_interrupt(void);
 
 bool PLy_enter_python_intepreter = false;
-bool PLy_add_path = false;
+bool PLy_path_added = false;
 
 /* GUC variables */
 #if PY_MAJOR_VERSION >= 3
@@ -95,13 +95,14 @@ assign_plpython3_python_path(const char *newval, void *extra)
 		ereport(WARNING, (errmsg("PYTHONPATH for plpython3 can only set once in one session")));
 }
 bool 
-check_path(char **newval, void **extra, GucSource source) {
-	if (PLy_add_path)
+plpython3_check_path(char **newval, void **extra, GucSource source) {
+	if (PLy_path_added)
 	{
 		GUC_check_errmsg("SET PYTHONPATH for plpython3 can only set once in one session");
 		return false;
 	}
-	PLy_add_path = true;	
+	if (strcmp(*newval, "") != 0)
+		PLy_path_added = true;
 	ereport(WARNING, (errmsg("PYTHONPATH for plpython3 can only set once in one session")));
 	return true;
 }
@@ -171,7 +172,7 @@ _PG_init(void)
 							"",
 							PGC_USERSET, 
 							GUC_GPDB_NEED_SYNC,
-							check_path, 
+							plpython3_check_path,
 							NULL, 
 							NULL);
 #endif
