@@ -69,6 +69,7 @@ static void PLy_pop_execution_context(void);
 static int *plpython_version_bitmask_ptr = NULL;
 static int	plpython_version_bitmask = 0;
 static const int plpython_python_version = PY_MAJOR_VERSION;
+static bool inited = false;
 
 /* initialize global variables */
 PyObject   *PLy_interp_globals = NULL;
@@ -85,14 +86,24 @@ bool PLy_enter_python_intepreter = false;
 bool PLy_add_path = false;
 
 /* GUC variables */
-// need to add ifdef
 #if PY_MAJOR_VERSION >= 3
 char *plpython3_path = NULL;
-void
+static void
 assign_plpython3_python_path(const char *newval, void *extra) 
 {
-	if (Gp_role != GP_ROLE_EXECUTE)
+	if (inited) 
 		ereport(WARNING, (errmsg("PYTHONPATH for plpython3 can only set once in one session")));
+}
+bool 
+check_path(char **newval, void **extra, GucSource source) {
+	if (PLy_add_path)
+	{
+		GUC_check_errmsg("SET PYTHONPATH for plpython3 can only set once in one session");
+		return false;
+	}
+	PLy_add_path = true;	
+	ereport(WARNING, (errmsg("PYTHONPATH for plpython3 can only set once in one session")));
+	return true;
 }
 #endif
 
@@ -157,10 +168,11 @@ _PG_init(void)
 							gettext_noop("Python path for plpython3."),
 							NULL,
 							&plpython3_path,
-							NULL,
-							PGC_USERSET, 0,
+							"",
+							PGC_USERSET, 
+							GUC_GPDB_NEED_SYNC,
+							check_path, 
 							NULL, 
-							assign_plpython3_python_path, 
 							NULL);
 #endif
 	pg_bindtextdomain(TEXTDOMAIN);
@@ -174,7 +186,6 @@ _PG_init(void)
 static void
 PLy_initialize(void)
 {
-	static bool inited = false;
 
 	/*
 	 * Check for multiple Python libraries before actively doing anything with
