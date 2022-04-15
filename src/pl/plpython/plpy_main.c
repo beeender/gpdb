@@ -1,4 +1,4 @@
-	/*
+/*
  * PL/Python main entry points
  *
  * src/pl/plpython/plpy_main.c
