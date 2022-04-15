@@ -88,14 +88,9 @@ bool PLy_path_added = false;
 /* GUC variables */
 #if PY_MAJOR_VERSION >= 3
 char *plpython3_path = NULL;
-static void
-assign_plpython3_python_path(const char *newval, void *extra) 
-{
-	if (inited) 
-		ereport(WARNING, (errmsg("PYTHONPATH for plpython3 can only set once in one session")));
-}
+
 bool 
-plpython3_check_path(char **newval, void **extra, GucSource source) {
+plpython3_check_python_path(char **newval, void **extra, GucSource source) {
 	if (PLy_path_added)
 	{
 		GUC_check_errmsg("SET PYTHONPATH for plpython3 can only set once in one session");
@@ -103,7 +98,6 @@ plpython3_check_path(char **newval, void **extra, GucSource source) {
 	}
 	if (strcmp(*newval, "") != 0)
 		PLy_path_added = true;
-	ereport(WARNING, (errmsg("PYTHONPATH for plpython3 can only set once in one session")));
 	return true;
 }
 #endif
@@ -169,10 +163,10 @@ _PG_init(void)
 							gettext_noop("Python path for plpython3."),
 							NULL,
 							&plpython3_path,
-							"",
+							"", // default path need to set empty for init
 							PGC_USERSET, 
 							GUC_GPDB_NEED_SYNC,
-							plpython3_check_path,
+							plpython3_check_python_path,
 							NULL, 
 							NULL);
 #endif
