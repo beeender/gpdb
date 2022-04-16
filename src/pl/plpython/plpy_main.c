@@ -69,7 +69,6 @@ static void PLy_pop_execution_context(void);
 static int *plpython_version_bitmask_ptr = NULL;
 static int	plpython_version_bitmask = 0;
 static const int plpython_python_version = PY_MAJOR_VERSION;
-static bool inited = false;
 
 /* initialize global variables */
 PyObject   *PLy_interp_globals = NULL;
@@ -181,6 +180,7 @@ _PG_init(void)
 static void
 PLy_initialize(void)
 {
+	static bool inited = false;
 
 	/*
 	 * Check for multiple Python libraries before actively doing anything with
