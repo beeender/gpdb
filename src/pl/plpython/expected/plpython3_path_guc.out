@@ -2,12 +2,6 @@
 -- Tests for functions that return set PYTHONPATH guc only for gpdb6 plpython3
 --
 LOAD 'plpython3';
-show plpython3.python_path;
- plpython3.python_path 
------------------------
- 
-(1 row)
-
 set plpython3.python_path='/foo';
 show plpython3.python_path;
  plpython3.python_path 
@@ -15,14 +9,22 @@ show plpython3.python_path;
  /foo
 (1 row)
 
-set plpython3.python_path='/bar';
-ERROR:  SET PYTHONPATH for plpython3 can only set once in one session
 -- Set up test path functions first.
 CREATE FUNCTION test_path_added() 
 RETURNS text AS $$
   import sys
   return str(sys.path[0])
 $$ language plpython3u;
+SELECT test_path_added();
+ test_path_added 
+-----------------
+ /foo
+(1 row)
+
+-- when the plpython init can not set again --
+set plpython3.python_path='/bar';
+ERROR:  SET PYTHONPATH faild, we can only set it before plpython3u init in one session
+-- run again the path will not change still /foo --
 SELECT test_path_added();
  test_path_added 
 -----------------

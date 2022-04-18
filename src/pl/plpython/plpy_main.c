@@ -84,19 +84,19 @@ void PLy_handle_cancel_interrupt(void);
 bool PLy_enter_python_intepreter = false;
 bool PLy_path_added = false;
 
+static bool inited = false;
+
 /* GUC variables */
 #if PY_MAJOR_VERSION >= 3
-char *plpython3_path = NULL;
+static char *plpython3_path = NULL;
 
 bool 
 plpython3_check_python_path(char **newval, void **extra, GucSource source) {
-	if (PLy_path_added)
+	if (inited)
 	{
-		GUC_check_errmsg("SET PYTHONPATH for plpython3 can only set once in one session");
+		GUC_check_errmsg("SET PYTHONPATH faild, we can only set it before plpython3u init in one session");
 		return false;
 	}
-	if (strcmp(*newval, "") != 0)
-		PLy_path_added = true;
 	return true;
 }
 #endif
@@ -180,7 +180,6 @@ _PG_init(void)
 static void
 PLy_initialize(void)
 {
-	static bool inited = false;
 
 	/*
 	 * Check for multiple Python libraries before actively doing anything with
@@ -203,8 +202,8 @@ PLy_initialize(void)
 		setenv("PYTHONPATH", plpython3_path, 1);
 	else 
 		unsetenv("PYTHONPATH");
+		unsetenv("PYTHONHOME");
 #endif
-	unsetenv("PYTHONHOME");
 	/* The rest should only be done once per session */
 	if (inited)
 		return;
