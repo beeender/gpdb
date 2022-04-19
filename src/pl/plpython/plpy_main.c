@@ -82,7 +82,6 @@ cancel_pending_hook_type prev_cancel_pending_hook;
 void PLy_handle_cancel_interrupt(void);
 
 bool PLy_enter_python_intepreter = false;
-bool PLy_path_added = false;
 
 static bool inited = false;
 

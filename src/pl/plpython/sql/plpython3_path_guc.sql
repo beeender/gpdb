@@ -2,6 +2,7 @@
 -- Tests for functions that return set PYTHONPATH guc only for gpdb6 plpython3
 --
 LOAD 'plpython3';
+show plpython3.python_path;
 
 set plpython3.python_path='/foo';
 show plpython3.python_path;
