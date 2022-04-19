@@ -90,11 +90,11 @@ static bool inited = false;
 #if PY_MAJOR_VERSION >= 3
 static char *plpython3_path = NULL;
 
-bool 
+static bool 
 plpython3_check_python_path(char **newval, void **extra, GucSource source) {
 	if (inited)
 	{
-		GUC_check_errmsg("SET PYTHONPATH faild, we can only set it before plpython3u init in one session");
+		GUC_check_errmsg("SET PYTHONPATH failed, the GUC value can only be changed before initializing the python interpreter.");
 		return false;
 	}
 	return true;
