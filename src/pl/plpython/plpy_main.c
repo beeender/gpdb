@@ -158,7 +158,7 @@ _PG_init(void)
 
 #if PY_MAJOR_VERSION >= 3
 	DefineCustomStringVariable("plpython3.python_path",
-							gettext_noop("Python path for plpython3."),
+							gettext_noop("PYTHONPATH for plpython3."),
 							NULL,
 							&plpython3_path,
 							"", // default path need to set empty for init
