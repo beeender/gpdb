@@ -90,7 +90,7 @@ REGRESS_OPTS = --dbname=$(PL_TESTDB) --init-file=$(srcdir)/init_file
 # for plpython3 extension name is the same as language name.
 # we do not need to load again.
 ifeq ($(python_majorversion),2)
-REGRESS_OPTS += --load-extension=plpython2u
+REGRESS_OPTS += --load-extension=plpythonu
 endif
 
 REGRESS = \
