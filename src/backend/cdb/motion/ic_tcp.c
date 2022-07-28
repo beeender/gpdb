@@ -125,6 +125,12 @@ static void dumpEntryConnections(int elevel, ChunkTransportStateEntry *pEntry);
 static void print_connection(ChunkTransportState *transportStates, int fd, const char *msg);
 #endif
 
+bool isRemoteMotion()
+{
+extern const char *debug_query_string; /* client-supplied query string */
+	return strstr(debug_query_string, "RMOTION") != NULL;
+}
+
 /*
  * setupTCPListeningSocket
  */
@@ -548,6 +554,50 @@ startOutgoingConnections(ChunkTransportState *transportStates,
 	return pEntry;
 }								/* startOutgoingConnections */
 
+static void
+sendRemoteMotionHeader(MotionConn *conn)
+{
+#define RMOTION_HEADER_LEN  128
+	char buf[RMOTION_HEADER_LEN] = {0};
+	CdbProcess *cdbProc = conn->cdbProc;
+
+	char* addr = cdbProc->listenerAddr;
+	int port = cdbProc->listenerPort;
+
+	snprintf(buf, 128, "%s:%d", addr, port);
+
+	memcpy(conn->pBuff + conn->msgSize, buf, RMOTION_HEADER_LEN);
+	conn->msgSize += RMOTION_HEADER_LEN;
+
+	size_t bytesToSend = 0;
+	size_t bytesSent = 0;
+
+	for (;;)
+	{
+		bytesToSend = RMOTION_HEADER_LEN - bytesSent;
+		bytesSent = send(conn->sockfd, buf + bytesSent, bytesToSend, 0);
+		if (bytesSent == bytesToSend)
+			break;
+		else if (bytesSent >= 0)
+			continue;
+		else if (errno == EWOULDBLOCK)
+			return;				/* call me again to send the rest */
+		//else if (errno == EINTR)
+		//		ML_CHECK_FOR_INTERRUPTS(transportStates->teardownActive);
+		else
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+					 errmsg("interconnect error writing registration message to seg%d at %s",
+							conn->remoteContentId,
+							conn->remoteHostAndPort),
+					 errdetail("write pid=%d sockfd=%d local=%s: %m",
+							   conn->cdbProc->pid,
+							   conn->sockfd,
+							   conn->localHostAndPort)));
+		}
+	}
+}
 
 /*
  * setupOutgoingConnection
@@ -579,18 +629,42 @@ setupOutgoingConnection(ChunkTransportState *transportStates, ChunkTransportStat
 	conn->wakeup_ms = 0;
 	conn->remoteContentId = cdbProc->contentid;
 
+	char* addr = cdbProc->listenerAddr;
+	int port = cdbProc->listenerPort;
+
+	if (isRemoteMotion())
+	{
+		const char* rmotion_path = "/tmp/rmotion";
+		char rmotion_buf[100];
+		memset(rmotion_buf, 0, 100);
+
+		FILE* rmotion_f = fopen(rmotion_path, "r");
+
+
+		if (rmotion_f)
+		{
+			fread(rmotion_buf, 1, 100, rmotion_f);
+			sscanf(rmotion_buf, "%s : %d", addr, &port);
+			fclose(rmotion_f);
+		}
+		else
+		{
+			elog(ERROR, "cannot read from /tmp/rmotion");
+		}
+	}
+
 	/*
 	 * record the destination IP addr and port for error messages. Since the
 	 * IP addr might be IPv6, it might have ':' embedded, so in that case, put
 	 * '[]' around it so we can see that the string is an IP and port
 	 * (otherwise it might look just like an IP).
 	 */
-	if (strchr(cdbProc->listenerAddr, ':') != 0)
+	if (strchr(addr, ':') != 0)
 		snprintf(conn->remoteHostAndPort, sizeof(conn->remoteHostAndPort),
-				 "[%s]:%d", cdbProc->listenerAddr, cdbProc->listenerPort);
+				 "[%s]:%d", addr, port);
 	else
 		snprintf(conn->remoteHostAndPort, sizeof(conn->remoteHostAndPort),
-				 "%s:%d", cdbProc->listenerAddr, cdbProc->listenerPort);
+				 "%s:%d", addr, port);
 
 	/* Might be retrying due to connection failure etc.  Close old socket. */
 	if (conn->sockfd >= 0)
@@ -634,10 +708,10 @@ setupOutgoingConnection(ChunkTransportState *transportStates, ChunkTransportStat
 	hint.ai_flags = AI_NUMERICHOST; /* Never do name resolution */
 #endif
 
-	snprintf(portNumberStr, sizeof(portNumberStr), "%d", cdbProc->listenerPort);
+	snprintf(portNumberStr, sizeof(portNumberStr), "%d", port);
 	service = portNumberStr;
 
-	ret = pg_getaddrinfo_all(cdbProc->listenerAddr, service, &hint, &addrs);
+	ret = pg_getaddrinfo_all(addr, service, &hint, &addrs);
 	if (ret || !addrs)
 	{
 		if (addrs)
@@ -645,7 +719,7 @@ setupOutgoingConnection(ChunkTransportState *transportStates, ChunkTransportStat
 
 		ereport(ERROR,
 				(errmsg("could not translate host addr \"%s\", port \"%d\" to address: %s",
-						cdbProc->listenerAddr, cdbProc->listenerPort, gai_strerror(ret))));
+						addr, port, gai_strerror(ret))));
 
 		return;
 	}
@@ -694,6 +768,10 @@ setupOutgoingConnection(ChunkTransportState *transportStates, ChunkTransportStat
 		/* Non-blocking socket never connects immediately, but check anyway. */
 		if (n == 0)
 		{
+			if (isRemoteMotion())
+			{
+				sendRemoteMotionHeader(conn);
+			}
 			sendRegisterMessage(transportStates, pEntry, conn);
 			pg_freeaddrinfo_all(hint.ai_family, addrs);
 			return;
@@ -748,6 +826,10 @@ updateOutgoingConnection(ChunkTransportState *transportStates, ChunkTransportSta
 	{
 			/* Success!  Advance to next state. */
 		case 0:
+			if (isRemoteMotion())
+			{
+				sendRemoteMotionHeader(conn);
+			}
 			sendRegisterMessage(transportStates, pEntry, conn);
 			return;
 		default:

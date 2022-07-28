@@ -2738,18 +2738,35 @@ setupOutgoingUDPConnection(ChunkTransportState *transportStates, ChunkTransportS
 	conn->remoteContentId = cdbProc->contentid;
 	conn->stat_min_ack_time = ~((uint64) 0);
 
+	const char* rmotion_path = "/tmp/rmotion";
+	char rmotion_buf[100];
+	memset(rmotion_buf, 0, 100);
+
+	char* addr = cdbProc->listenerAddr;
+	int port = cdbProc->listenerPort;
+
+	FILE* rmotion_f = fopen(rmotion_path, "r");
+
+
+	if (rmotion_f)
+	{
+		fread(rmotion_buf, 1, 100, rmotion_f);
+		sscanf(rmotion_buf, "%s : %d", addr, &port);
+        fclose(rmotion_f);
+	}
+
 	/* Save the information for the error message if getaddrinfo fails */
-	if (strchr(cdbProc->listenerAddr, ':') != 0)
+	if (strchr(addr, ':') != 0)
 		snprintf(conn->remoteHostAndPort, sizeof(conn->remoteHostAndPort),
-				 "[%s]:%d", cdbProc->listenerAddr, cdbProc->listenerPort);
+				 "[%s]:%d", addr, port);
 	else
 		snprintf(conn->remoteHostAndPort, sizeof(conn->remoteHostAndPort),
-				 "%s:%d", cdbProc->listenerAddr, cdbProc->listenerPort);
+				 "%s:%d", addr, port);
 
 	/*
 	 * Get socketaddr to connect to.
 	 */
-	getSockAddr(&conn->peer, &conn->peer_len, cdbProc->listenerAddr, cdbProc->listenerPort);
+	getSockAddr(&conn->peer, &conn->peer_len, addr, port);
 
 	/* Save the destination IP address */
 	format_sockaddr(&conn->peer, conn->remoteHostAndPort,
