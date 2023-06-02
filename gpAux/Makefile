@@ -138,7 +138,7 @@ endif
 
 
 ifneq (false, ${PG_LANG})
-CONFIGFLAGS+= --with-perl --with-python PYTHON=python3
+CONFIGFLAGS+= --with-perl --with-python PYTHON=python3.9
 ifdef TCL_CFG
 CONFIGFLAGS+= --with-tcl-config=${TCL_CFG}
 endif
@@ -528,7 +528,7 @@ mgmtcopy :
 	cp -rp $(GPMGMT)/bin/gppylib $(INSTLOC)/lib/python
 	cp -rp $(GPMGMT)/bin/ext/* $(INSTLOC)/lib/python
 	cp -rp $(GPMGMT)/bin $(INSTLOC)
-	cp -rp $(GPMGMT)/sbin/* $(INSTLOC)/sbin/.
+	cp -rp $(GPMGMT)/sbin/* $(INSTLOC)/sbin/..
 	if [ ! -d ${INSTLOC}/docs ] ; then mkdir ${INSTLOC}/docs ; fi
 	if [ -d $(GPMGMT)/doc ]; then cp -rp $(GPMGMT)/doc $(INSTLOC)/docs/cli_help; fi
 	if [ -d $(GPMGMT)/demo/gpfdist_transform ]; then \
